@@ -20,7 +20,7 @@ export async function registerUser(formData: FormData) {
   const result = registerSchema.safeParse(data);
   
   if (!result.success) {
-    throw new Error("Invalid form data");
+    redirect("/register?error=InvalidData");
   }
   
   const { name, email, password } = result.data;
@@ -28,7 +28,7 @@ export async function registerUser(formData: FormData) {
   // check duplicate email
   const existingUser = await prisma.user.findUnique({ where: { email } });
   if (existingUser) {
-    throw new Error("Email already exists");
+    redirect("/login?message=AccountExists");
   }
   
   const passwordHash = await bcrypt.hash(password, 10);
@@ -41,7 +41,7 @@ export async function registerUser(formData: FormData) {
     }
   });
   
-  redirect("/login");
+  redirect("/login?message=RegisteredSuccessfully");
 }
 
 export async function loginUser(formData: FormData) {
@@ -52,8 +52,8 @@ export async function loginUser(formData: FormData) {
     await signIn("credentials", formData, { redirectTo: "/" });
   } catch (error) {
     if (error instanceof AuthError) {
-      // You can handle specific Auth errors here
-      console.error("Auth error:", error.type);
+      // If it's an AuthError (wrong password, missing secret), redirect back to login
+      redirect("/login?error=InvalidCredentials");
     }
     // We MUST throw the error so Next.js can handle the redirect!
     throw error;
