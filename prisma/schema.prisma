@@ -1,0 +1,279 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// -----------------------------------------------------------------------------
+// USER & AUTHENTICATION
+// -----------------------------------------------------------------------------
+
+model User {
+  id            String    @id @default(uuid())
+  name          String?
+  email         String    @unique
+  passwordHash  String
+  image         String?
+  timezone      String    @default("UTC")
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relationships
+  memberships       GroupMember[]
+  goals             Goal[]
+  dailyCheckIns     DailyCheckIn[]
+  scoreTransactions ScoreTransaction[]
+  streak            Streak?
+  notifications     Notification[]
+  auditLogs         AuditLog[] @relation("AdminAuditLog")
+}
+
+// -----------------------------------------------------------------------------
+// GROUP SYSTEM
+// -----------------------------------------------------------------------------
+
+enum Role {
+  STUDENT
+  ADMIN
+}
+
+model Group {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  code        String   @unique
+  timezone    String   @default("UTC")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  members      GroupMember[]
+  invitations  Invitation[]
+  auditLogs    AuditLog[]
+}
+
+model GroupMember {
+  id        String   @id @default(uuid())
+  userId    String
+  groupId   String
+  role      Role     @default(STUDENT)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, groupId])
+}
+
+model Invitation {
+  id        String   @id @default(uuid())
+  groupId   String
+  code      String   @unique
+  expiresAt DateTime?
+  createdAt DateTime @default(now())
+
+  group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+}
+
+// -----------------------------------------------------------------------------
+// GOAL & ROADMAP SYSTEM
+// -----------------------------------------------------------------------------
+
+model Goal {
+  id          String   @id @default(uuid())
+  userId      String
+  title       String
+  startDate   DateTime
+  endDate     DateTime
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user   User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  months RoadmapMonth[]
+}
+
+model RoadmapMonth {
+  id        String   @id @default(uuid())
+  goalId    String
+  title     String
+  order     Int      // 1, 2, 3...
+  isLocked  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  goal        Goal                @relation(fields: [goalId], references: [id], onDelete: Cascade)
+  commitments MonthlyCommitment[]
+}
+
+model MonthlyCommitment {
+  id             String   @id @default(uuid())
+  roadmapMonthId String
+  title          String
+  order          Int
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  month         RoadmapMonth   @relation(fields: [roadmapMonthId], references: [id], onDelete: Cascade)
+  weeklyTargets WeeklyTarget[]
+}
+
+// -----------------------------------------------------------------------------
+// WEEKLY & DAILY EXECUTION
+// -----------------------------------------------------------------------------
+
+model WeeklyPlan {
+  id        String   @id @default(uuid())
+  userId    String
+  startDate DateTime
+  endDate   DateTime
+  isLocked  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  targets WeeklyTarget[]
+  evaluations WeeklyEvaluation[]
+}
+
+model WeeklyTarget {
+  id                  String   @id @default(uuid())
+  weeklyPlanId        String
+  monthlyCommitmentId String?
+  title               String
+  weight              Int      @default(1)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  weeklyPlan  WeeklyPlan         @relation(fields: [weeklyPlanId], references: [id], onDelete: Cascade)
+  commitment  MonthlyCommitment? @relation(fields: [monthlyCommitmentId], references: [id], onDelete: SetNull)
+  assignments DailyAssignment[]
+}
+
+model DailyAssignment {
+  id             String   @id @default(uuid())
+  userId         String
+  weeklyTargetId String
+  title          String
+  date           DateTime // The intended execution date
+  isCompleted    Boolean  @default(false)
+  isLocked       Boolean  @default(false)
+  weight         Int      @default(1)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  weeklyTarget WeeklyTarget @relation(fields: [weeklyTargetId], references: [id], onDelete: Cascade)
+  backlogItem  BacklogItem?
+}
+
+// -----------------------------------------------------------------------------
+// BACKLOG & RECOVERY
+// -----------------------------------------------------------------------------
+
+model BacklogItem {
+  id                String   @id @default(uuid())
+  userId            String
+  dailyAssignmentId String   @unique // Original assignment
+  originalDate      DateTime
+  isCompleted       Boolean  @default(false)
+  completedDate     DateTime?
+  lateDays          Int?
+  lateMultiplier    Float?
+  earnedScore       Float?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  assignment DailyAssignment @relation(fields: [dailyAssignmentId], references: [id], onDelete: Cascade)
+}
+
+// -----------------------------------------------------------------------------
+// SCORING & TRACKING
+// -----------------------------------------------------------------------------
+
+model DailyCheckIn {
+  id              String   @id @default(uuid())
+  userId          String
+  date            DateTime // Date this checkin represents
+  totalTasks      Int
+  completedTasks  Int
+  scoreEarned     Float
+  createdAt       DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, date])
+}
+
+model WeeklyEvaluation {
+  id               String   @id @default(uuid())
+  userId           String
+  weeklyPlanId     String
+  plannedWeight    Float
+  completedWeight  Float
+  remainingWeight  Float
+  score            Float
+  deduction        Float
+  status           String   // e.g. "EVALUATED", "PENDING"
+  createdAt        DateTime @default(now())
+
+  plan WeeklyPlan @relation(fields: [weeklyPlanId], references: [id], onDelete: Cascade)
+}
+
+model ScoreTransaction {
+  id           String   @id @default(uuid())
+  userId       String
+  groupId      String?
+  sourceType   String   // e.g. "DAILY_CHECKIN", "BACKLOG", "WEEKLY_PENALTY", "ADMIN_ADJUSTMENT"
+  sourceId     String   // reference ID based on sourceType
+  points       Float
+  multiplier   Float    @default(1.0)
+  earnedPoints Float
+  createdAt    DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Streak {
+  id           String   @id @default(uuid())
+  userId       String   @unique
+  currentCount Int      @default(0)
+  longestCount Int      @default(0)
+  lastCheckIn  DateTime?
+  updatedAt    DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// -----------------------------------------------------------------------------
+// SYSTEM & NOTIFICATIONS
+// -----------------------------------------------------------------------------
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  title     String
+  message   String
+  type      String   // e.g. "ADMIN_ACTION", "DEADLINE", "STREAK"
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model AuditLog {
+  id           String   @id @default(uuid())
+  adminId      String
+  groupId      String
+  affectedUser String?
+  actionType   String   // e.g. "EDIT_WEEKLY_TARGET", "CORRECT_SCORE"
+  entityType   String
+  entityId     String
+  previousVal  String?  // JSON stringified
+  newVal       String?  // JSON stringified
+  reason       String?
+  createdAt    DateTime @default(now())
+
+  admin User  @relation("AdminAuditLog", fields: [adminId], references: [id], onDelete: Cascade)
+  group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+}
