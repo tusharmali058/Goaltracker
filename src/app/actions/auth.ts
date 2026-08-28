@@ -51,7 +51,7 @@ export async function loginUser(formData: FormData) {
   const credentials = Object.fromEntries(formData);
   
   try {
-    await signIn("credentials", credentials, { redirectTo: "/" });
+    await signIn("credentials", { ...credentials, redirectTo: "/" });
   } catch (error) {
     if (error instanceof AuthError) {
       // If it's an AuthError (wrong password, missing secret), redirect back to login
