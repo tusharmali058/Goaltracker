@@ -48,8 +48,10 @@ export async function loginUser(formData: FormData) {
   const { signIn } = await import("@/auth");
   const { AuthError } = await import("next-auth");
   
+  const credentials = Object.fromEntries(formData);
+  
   try {
-    await signIn("credentials", formData, { redirectTo: "/" });
+    await signIn("credentials", credentials, { redirectTo: "/" });
   } catch (error) {
     if (error instanceof AuthError) {
       // If it's an AuthError (wrong password, missing secret), redirect back to login
