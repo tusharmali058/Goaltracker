@@ -1,7 +1,13 @@
+"use client";
+
+import { useState } from "react";
 import Link from "next/link";
-import { signIn } from "@/auth";
+import { loginUser } from "@/app/actions/auth";
+import { Eye, EyeOff } from "lucide-react";
 
 export default function LoginPage() {
+  const [showPassword, setShowPassword] = useState(false);
+
   return (
     <div className="min-h-screen bg-[var(--color-background)] flex items-center justify-center p-4">
       <div className="max-w-md w-full bg-[var(--color-surface)] p-8 rounded-lg shadow-sm border border-[var(--color-border)]">
@@ -10,10 +16,7 @@ export default function LoginPage() {
           <p className="text-[var(--color-muted)] mt-2">Sign in to your account</p>
         </div>
 
-        <form className="space-y-4" action={async (formData) => {
-          "use server"
-          await signIn("credentials", formData)
-        }}>
+        <form className="space-y-4" action={loginUser}>
           <div>
             <label className="block text-sm font-medium text-[var(--color-foreground)] mb-1">Email</label>
             <input 
@@ -26,12 +29,21 @@ export default function LoginPage() {
           </div>
           <div>
             <label className="block text-sm font-medium text-[var(--color-foreground)] mb-1">Password</label>
-            <input 
-              name="password"
-              type="password" 
-              required
-              className="w-full px-3 py-2 border border-[var(--color-border)] rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent"
-            />
+            <div className="relative">
+              <input 
+                name="password"
+                type={showPassword ? "text" : "password"} 
+                required
+                className="w-full px-3 py-2 border border-[var(--color-border)] rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-2.5 text-[var(--color-muted)] hover:text-[var(--color-primary)] focus:outline-none"
+              >
+                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+              </button>
+            </div>
           </div>
           <button 
             type="submit"

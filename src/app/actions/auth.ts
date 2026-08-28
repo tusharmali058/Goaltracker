@@ -43,3 +43,8 @@ export async function registerUser(formData: FormData) {
   
   redirect("/login");
 }
+
+export async function loginUser(formData: FormData) {
+  const { signIn } = await import("@/auth");
+  await signIn("credentials", formData);
+}
