@@ -46,5 +46,16 @@ export async function registerUser(formData: FormData) {
 
 export async function loginUser(formData: FormData) {
   const { signIn } = await import("@/auth");
-  await signIn("credentials", formData);
+  const { AuthError } = await import("next-auth");
+  
+  try {
+    await signIn("credentials", formData, { redirectTo: "/" });
+  } catch (error) {
+    if (error instanceof AuthError) {
+      // You can handle specific Auth errors here
+      console.error("Auth error:", error.type);
+    }
+    // We MUST throw the error so Next.js can handle the redirect!
+    throw error;
+  }
 }
