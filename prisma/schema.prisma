@@ -50,7 +50,12 @@ model Group {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
+  // Admin-controlled deadlines
+  monthlyDeadline DateTime? // Deadline for monthly commitment submissions
+  weeklyDeadline  DateTime? // Deadline for weekly target submissions
+
   members      GroupMember[]
+  weeklyPlans  WeeklyPlan[]
   invitations  Invitation[]
   auditLogs    AuditLog[]
 }
@@ -80,7 +85,7 @@ model Invitation {
 }
 
 // -----------------------------------------------------------------------------
-// GOAL & ROADMAP SYSTEM
+// GOAL & ROADMAP SYSTEM (Personal — owned by User)
 // -----------------------------------------------------------------------------
 
 model Goal {
@@ -122,19 +127,21 @@ model MonthlyCommitment {
 }
 
 // -----------------------------------------------------------------------------
-// WEEKLY & DAILY EXECUTION
+// WEEKLY & DAILY EXECUTION (Group-gated — requires group membership)
 // -----------------------------------------------------------------------------
 
 model WeeklyPlan {
   id        String   @id @default(uuid())
   userId    String
+  groupId   String
   startDate DateTime
   endDate   DateTime
   isLocked  Boolean  @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  targets WeeklyTarget[]
+  group       Group            @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  targets     WeeklyTarget[]
   evaluations WeeklyEvaluation[]
 }
 

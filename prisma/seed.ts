@@ -61,21 +61,30 @@ async function main() {
     },
   });
 
-  // 4. Create Goal for Student
-  const goal = await prisma.goal.create({
+  // 4. Create Goal for each user (goals are user-owned, not group-owned)
+  const adminGoal = await prisma.goal.create({
     data: {
-      userId: studentUser.id,
+      userId: adminUser.id,
       title: 'Become Internship Ready',
       startDate: new Date('2026-08-01'),
       endDate: new Date('2027-02-01'),
     }
   });
 
-  // 5. Create Roadmap Months & Commitments
+  const studentGoal = await prisma.goal.create({
+    data: {
+      userId: studentUser.id,
+      title: 'Master Full-Stack Development',
+      startDate: new Date('2026-08-01'),
+      endDate: new Date('2027-02-01'),
+    }
+  });
+
+  // 5. Create Roadmap Months & Commitments for student
   const m1 = await prisma.roadmapMonth.create({
     data: {
-      goalId: goal.id,
-      title: 'Month 1: JavaScript Fundamentals',
+      goalId: studentGoal.id,
+      title: 'JavaScript Fundamentals',
       order: 1,
       commitments: {
         create: [
@@ -89,8 +98,8 @@ async function main() {
 
   const m2 = await prisma.roadmapMonth.create({
     data: {
-      goalId: goal.id,
-      title: 'Month 2: Advanced React',
+      goalId: studentGoal.id,
+      title: 'Advanced React',
       order: 2,
       commitments: {
         create: [
@@ -101,16 +110,18 @@ async function main() {
     }
   });
 
-  // 6. Create Weekly Plan for current week
+  // 6. Create Weekly Plan for current week (requires group)
   const today = new Date();
   const startOfWeek = new Date(today);
   startOfWeek.setDate(today.getDate() - today.getDay());
-  const endOfWeek = new Date(today);
-  endOfWeek.setDate(today.getDate() - today.getDay() + 6);
+  startOfWeek.setHours(0, 0, 0, 0);
+  const endOfWeek = new Date(startOfWeek);
+  endOfWeek.setDate(startOfWeek.getDate() + 7);
 
   const weeklyPlan = await prisma.weeklyPlan.create({
     data: {
       userId: studentUser.id,
+      groupId: group.id,
       startDate: startOfWeek,
       endDate: endOfWeek,
       targets: {

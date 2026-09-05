@@ -6,10 +6,10 @@ import prisma from "@/lib/prisma";
 import { redirect } from "next/navigation";
 
 const registerSchema = z.object({
-  name: z.string().min(1),
-  email: z.string().email(),
-  password: z.string().min(6),
-  confirmPassword: z.string().min(6)
+  name: z.string().min(1, "Name is required"),
+  email: z.string().email("Please enter a valid email"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
+  confirmPassword: z.string().min(6, "Please confirm your password")
 }).refine(data => data.password === data.confirmPassword, {
   message: "Passwords do not match",
   path: ["confirmPassword"]
@@ -17,10 +17,13 @@ const registerSchema = z.object({
 
 export async function registerUser(formData: FormData) {
   const data = Object.fromEntries(formData);
+  console.log("[registerUser] Form data keys:", Object.keys(data));
   const result = registerSchema.safeParse(data);
   
   if (!result.success) {
-    redirect("/register?error=InvalidData");
+    console.error("[registerUser] Validation errors:", JSON.stringify(result.error.flatten()));
+    const firstError = result.error.issues[0]?.message || "InvalidData";
+    redirect(`/register?error=${encodeURIComponent(firstError)}`);
   }
   
   const { name, email, password } = result.data;

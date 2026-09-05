@@ -1,12 +1,24 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useTransition } from 'react';
 import Link from 'next/link';
-import { Menu, X, Bell } from 'lucide-react';
+import { Menu, X, Bell, LogOut } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { logoutUser } from '@/app/actions/logout';
 
 export function AppShell({ children, isAdmin }: { children: React.ReactNode, isAdmin?: boolean }) {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [isPending, startTransition] = useTransition();
+
+  function closeDrawer() {
+    setIsDrawerOpen(false);
+  }
+
+  function handleSignOut() {
+    startTransition(async () => {
+      await logoutUser();
+    });
+  }
 
   return (
     <div className="min-h-screen bg-[var(--color-background)]">
@@ -17,13 +29,13 @@ export function AppShell({ children, isAdmin }: { children: React.ReactNode, isA
             <Link href="/">GoalTracker</Link>
           </div>
           <div className="flex items-center gap-4">
-            <button className="p-2 rounded-md hover:bg-[var(--color-secondary)] text-[var(--color-muted)] relative">
+            <button className="p-2 rounded-md hover:bg-[var(--color-secondary)] text-[var(--color-muted)] relative cursor-pointer">
               <Bell className="w-5 h-5" />
               <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-[var(--color-accent)] rounded-full"></span>
             </button>
             <button 
               onClick={() => setIsDrawerOpen(true)}
-              className="p-2 rounded-md hover:bg-[var(--color-secondary)] text-[var(--color-primary)]"
+              className="p-2 rounded-md hover:bg-[var(--color-secondary)] text-[var(--color-primary)] cursor-pointer"
             >
               <Menu className="w-6 h-6" />
             </button>
@@ -40,7 +52,7 @@ export function AppShell({ children, isAdmin }: { children: React.ReactNode, isA
       {isDrawerOpen && (
         <div 
           className="fixed inset-0 bg-black/20 z-50 transition-opacity"
-          onClick={() => setIsDrawerOpen(false)}
+          onClick={closeDrawer}
         />
       )}
 
@@ -55,8 +67,8 @@ export function AppShell({ children, isAdmin }: { children: React.ReactNode, isA
           <div className="p-4 border-b border-[var(--color-border)] flex items-center justify-between">
             <span className="font-semibold text-[var(--color-primary)]">Menu</span>
             <button 
-              onClick={() => setIsDrawerOpen(false)}
-              className="p-2 rounded-md hover:bg-[var(--color-secondary)] text-[var(--color-muted)]"
+              onClick={closeDrawer}
+              className="p-2 rounded-md hover:bg-[var(--color-secondary)] text-[var(--color-muted)] cursor-pointer"
             >
               <X className="w-5 h-5" />
             </button>
@@ -66,25 +78,25 @@ export function AppShell({ children, isAdmin }: { children: React.ReactNode, isA
             <div className="space-y-2">
               <h3 className="text-xs font-semibold text-[var(--color-muted)] uppercase tracking-wider">Workspace</h3>
               <nav className="flex flex-col gap-1">
-                <Link href="/" className="px-3 py-2 rounded-md hover:bg-[var(--color-secondary)] text-[var(--color-foreground)]">Dashboard</Link>
-                <Link href="/roadmap" className="px-3 py-2 rounded-md hover:bg-[var(--color-secondary)] text-[var(--color-foreground)]">My Roadmap</Link>
-                <Link href="/week" className="px-3 py-2 rounded-md hover:bg-[var(--color-secondary)] text-[var(--color-foreground)]">This Week</Link>
+                <Link href="/" onClick={closeDrawer} className="px-3 py-2 rounded-md hover:bg-[var(--color-secondary)] text-[var(--color-foreground)]">Dashboard</Link>
+                <Link href="/roadmap" onClick={closeDrawer} className="px-3 py-2 rounded-md hover:bg-[var(--color-secondary)] text-[var(--color-foreground)]">My Roadmap</Link>
+                <Link href="/week" onClick={closeDrawer} className="px-3 py-2 rounded-md hover:bg-[var(--color-secondary)] text-[var(--color-foreground)]">Weekly Plan</Link>
               </nav>
             </div>
 
             <div className="space-y-2">
               <h3 className="text-xs font-semibold text-[var(--color-muted)] uppercase tracking-wider">Group</h3>
               <nav className="flex flex-col gap-1">
-                <Link href="/group" className="px-3 py-2 rounded-md hover:bg-[var(--color-secondary)] text-[var(--color-foreground)]">Group</Link>
-                <Link href="/group/leaderboard" className="px-3 py-2 rounded-md hover:bg-[var(--color-secondary)] text-[var(--color-foreground)]">Leaderboard</Link>
+                <Link href="/group" onClick={closeDrawer} className="px-3 py-2 rounded-md hover:bg-[var(--color-secondary)] text-[var(--color-foreground)]">Group</Link>
+                <Link href="/group/leaderboard" onClick={closeDrawer} className="px-3 py-2 rounded-md hover:bg-[var(--color-secondary)] text-[var(--color-foreground)]">Leaderboard</Link>
               </nav>
             </div>
 
             <div className="space-y-2">
               <h3 className="text-xs font-semibold text-[var(--color-muted)] uppercase tracking-wider">Account</h3>
               <nav className="flex flex-col gap-1">
-                <Link href="/profile" className="px-3 py-2 rounded-md hover:bg-[var(--color-secondary)] text-[var(--color-foreground)]">Profile</Link>
-                <Link href="/settings" className="px-3 py-2 rounded-md hover:bg-[var(--color-secondary)] text-[var(--color-foreground)]">Settings</Link>
+                <Link href="/profile" onClick={closeDrawer} className="px-3 py-2 rounded-md hover:bg-[var(--color-secondary)] text-[var(--color-foreground)]">Profile</Link>
+                <Link href="/settings" onClick={closeDrawer} className="px-3 py-2 rounded-md hover:bg-[var(--color-secondary)] text-[var(--color-foreground)]">Settings</Link>
               </nav>
             </div>
 
@@ -92,21 +104,34 @@ export function AppShell({ children, isAdmin }: { children: React.ReactNode, isA
               <div className="space-y-2 pt-4 border-t border-[var(--color-border)]">
                 <h3 className="text-xs font-semibold text-[var(--color-destructive)] uppercase tracking-wider">Admin</h3>
                 <nav className="flex flex-col gap-1">
-                  <Link href="/admin" className="px-3 py-2 rounded-md hover:bg-[var(--color-secondary)] text-[var(--color-foreground)]">Admin Dashboard</Link>
-                  <Link href="/admin/overrides" className="px-3 py-2 rounded-md hover:bg-[var(--color-secondary)] text-[var(--color-foreground)]">Overrides</Link>
-                  <Link href="/admin/audit" className="px-3 py-2 rounded-md hover:bg-[var(--color-secondary)] text-[var(--color-foreground)]">Audit Log</Link>
+                  <Link href="/admin" onClick={closeDrawer} className="px-3 py-2 rounded-md hover:bg-[var(--color-secondary)] text-[var(--color-foreground)]">Admin Dashboard</Link>
+                  <Link href="/admin/overrides" onClick={closeDrawer} className="px-3 py-2 rounded-md hover:bg-[var(--color-secondary)] text-[var(--color-foreground)]">Overrides</Link>
+                  <Link href="/admin/audit" onClick={closeDrawer} className="px-3 py-2 rounded-md hover:bg-[var(--color-secondary)] text-[var(--color-foreground)]">Audit Log</Link>
                 </nav>
                 <div className="mt-4 p-3 bg-red-50 rounded-md border border-red-100">
                   <p className="text-sm text-red-800 font-medium">Admin Mode</p>
-                  <button className="mt-2 w-full px-3 py-1.5 bg-white border border-red-200 rounded text-red-700 text-sm font-medium hover:bg-red-50">
+                  <button className="mt-2 w-full px-3 py-1.5 bg-white border border-red-200 rounded text-red-700 text-sm font-medium hover:bg-red-50 cursor-pointer">
                     Switch to Admin Mode
                   </button>
                 </div>
               </div>
             )}
           </div>
+
+          {/* Sign Out Button */}
+          <div className="p-4 border-t border-[var(--color-border)]">
+            <button
+              onClick={handleSignOut}
+              disabled={isPending}
+              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-[var(--color-secondary)] text-[var(--color-foreground)] rounded-md hover:bg-red-50 hover:text-red-700 font-medium transition-colors disabled:opacity-50 cursor-pointer"
+            >
+              <LogOut className="w-4 h-4" />
+              {isPending ? 'Signing out...' : 'Sign Out'}
+            </button>
+          </div>
         </div>
       </div>
     </div>
   );
 }
+

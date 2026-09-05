@@ -1,13 +1,24 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { registerUser } from "@/app/actions/auth";
 import { Eye, EyeOff } from "lucide-react";
 
 export default function RegisterPage() {
+  return (
+    <Suspense>
+      <RegisterForm />
+    </Suspense>
+  );
+}
+
+function RegisterForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const searchParams = useSearchParams();
+  const error = searchParams.get("error");
 
   return (
     <div className="min-h-screen bg-[var(--color-background)] flex items-center justify-center p-4">
@@ -16,6 +27,12 @@ export default function RegisterPage() {
           <h1 className="text-2xl font-bold text-[var(--color-primary)]">GoalTracker</h1>
           <p className="text-[var(--color-muted)] mt-2">Create a new account</p>
         </div>
+
+        {error && (
+          <div className="mb-4 p-3 rounded-md bg-red-50 border border-red-200 text-red-700 text-sm">
+            {error}
+          </div>
+        )}
 
         <form className="space-y-4" action={registerUser}>
           <div>
