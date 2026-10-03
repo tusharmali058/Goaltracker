@@ -14,16 +14,21 @@ export default async function DashboardLayout({
     redirect("/login");
   }
 
-  // Optionally fetch user from db to get roles
+  // Single query: fetch user name + admin status in one go
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
-    include: { memberships: true }
+    select: {
+      name: true,
+      memberships: {
+        select: { role: true },
+      },
+    },
   });
 
   const isAdmin = user?.memberships.some(m => m.role === "ADMIN") ?? false;
 
   return (
-    <AppShell isAdmin={isAdmin}>
+    <AppShell isAdmin={isAdmin} userName={user?.name || session.user.name}>
       {children}
     </AppShell>
   );

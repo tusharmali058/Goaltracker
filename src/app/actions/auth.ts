@@ -47,7 +47,7 @@ export async function registerUser(formData: FormData) {
   redirect("/login?message=RegisteredSuccessfully");
 }
 
-export async function loginUser(formData: FormData) {
+export async function loginUser(_prevState: { error: string | null }, formData: FormData): Promise<{ error: string | null }> {
   const { signIn } = await import("@/auth");
   const { AuthError } = await import("next-auth");
 
@@ -58,14 +58,17 @@ export async function loginUser(formData: FormData) {
       redirectTo: "/",
     });
   } catch (error) {
-    // NextAuth v5 throws a NEXT_REDIRECT on successful sign-in.
-    // We MUST re-throw it so Next.js can perform the redirect.
+    // signIn throws a NEXT_REDIRECT on success — re-throw so Next.js
+    // can actually perform the navigation.
     if (error instanceof Error && error.message?.includes("NEXT_REDIRECT")) {
       throw error;
     }
     if (error instanceof AuthError) {
-      redirect("/login?error=InvalidCredentials");
+      return { error: "InvalidCredentials" };
     }
-    throw error;
+    return { error: "Something went wrong. Please try again." };
   }
+
+  // Should not reach here, but satisfy TypeScript
+  return { error: null };
 }

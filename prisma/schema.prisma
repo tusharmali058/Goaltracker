@@ -72,6 +72,8 @@ model GroupMember {
   group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
 
   @@unique([userId, groupId])
+  @@index([userId])
+  @@index([groupId])
 }
 
 model Invitation {
@@ -99,6 +101,8 @@ model Goal {
 
   user   User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   months RoadmapMonth[]
+
+  @@index([userId, createdAt(sort: Desc)])
 }
 
 model RoadmapMonth {
@@ -112,6 +116,8 @@ model RoadmapMonth {
 
   goal        Goal                @relation(fields: [goalId], references: [id], onDelete: Cascade)
   commitments MonthlyCommitment[]
+
+  @@index([goalId, order])
 }
 
 model MonthlyCommitment {
@@ -124,6 +130,8 @@ model MonthlyCommitment {
 
   month         RoadmapMonth   @relation(fields: [roadmapMonthId], references: [id], onDelete: Cascade)
   weeklyTargets WeeklyTarget[]
+
+  @@index([roadmapMonthId])
 }
 
 // -----------------------------------------------------------------------------
@@ -143,6 +151,9 @@ model WeeklyPlan {
   group       Group            @relation(fields: [groupId], references: [id], onDelete: Cascade)
   targets     WeeklyTarget[]
   evaluations WeeklyEvaluation[]
+
+  @@index([userId, groupId, startDate, endDate])
+  @@index([groupId, startDate])
 }
 
 model WeeklyTarget {
@@ -157,6 +168,8 @@ model WeeklyTarget {
   weeklyPlan  WeeklyPlan         @relation(fields: [weeklyPlanId], references: [id], onDelete: Cascade)
   commitment  MonthlyCommitment? @relation(fields: [monthlyCommitmentId], references: [id], onDelete: SetNull)
   assignments DailyAssignment[]
+
+  @@index([weeklyPlanId])
 }
 
 model DailyAssignment {
@@ -173,6 +186,9 @@ model DailyAssignment {
 
   weeklyTarget WeeklyTarget @relation(fields: [weeklyTargetId], references: [id], onDelete: Cascade)
   backlogItem  BacklogItem?
+
+  @@index([userId, date])
+  @@index([weeklyTargetId])
 }
 
 // -----------------------------------------------------------------------------
@@ -193,6 +209,8 @@ model BacklogItem {
   updatedAt         DateTime @updatedAt
 
   assignment DailyAssignment @relation(fields: [dailyAssignmentId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isCompleted])
 }
 
 // -----------------------------------------------------------------------------
@@ -211,6 +229,7 @@ model DailyCheckIn {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
   
   @@unique([userId, date])
+  @@index([userId])
 }
 
 model WeeklyEvaluation {
@@ -240,6 +259,9 @@ model ScoreTransaction {
   createdAt    DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([userId])
 }
 
 model Streak {
@@ -267,6 +289,8 @@ model Notification {
   createdAt DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 model AuditLog {
@@ -284,4 +308,6 @@ model AuditLog {
 
   admin User  @relation("AdminAuditLog", fields: [adminId], references: [id], onDelete: Cascade)
   group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@index([groupId, createdAt(sort: Desc)])
 }
